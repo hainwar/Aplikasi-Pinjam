@@ -48,15 +48,9 @@ export default function HomeScreen() {
           <FontAwesome name="book" size={24} color="brown" /> {/* Ganti ikon Peminjaman */}
           <Text style={styles.menuText}>PEMINJAMAN</Text>
         </TouchableOpacity>
-        
-        <TouchableOpacity style={styles.menuItem}
-          onPress={() => navigation.navigate('Pengembalian')}>
-          <FontAwesome name="undo" size={24} color="brown" /> 
-          <Text style={styles.menuText}>PENGEMBALIAN</Text>
-        </TouchableOpacity>
-        
+
         <TouchableOpacity style={styles.menuItem} 
-          onPress={() => navigation.navigate('data')}> 
+          onPress={() => navigation.navigate('History')}> 
           <FontAwesome name="list-alt" size={24} color="brown" /> 
           <Text style={styles.menuText}>DATA PEMINJAMAN&PENGEMBALIAN</Text>
         </TouchableOpacity>

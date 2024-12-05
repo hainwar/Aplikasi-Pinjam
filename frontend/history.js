@@ -1,131 +1,74 @@
-import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, View, ScrollView, Image, TouchableOpacity } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useNavigation } from '@react-navigation/native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, Image, TextInput, Button, TouchableOpacity } from 'react-native';
 
-export default function Data() {
-  const [history, setHistory] = useState([]);
-  const navigation = useNavigation();
+export default function History({ navigation }) {
+  const [peminjamanList, setPeminjamanList] = useState([]);
+  const [filteredPeminjaman, setFilteredPeminjaman] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
 
+  // Ambil data peminjaman dari API
   useEffect(() => {
-    const fetchHistory = async () => {
-      const storedData = await AsyncStorage.getItem('historyData');
-      if (storedData) {
-        setHistory(JSON.parse(storedData));
-      }
-    };
-
-    fetchHistory();
+    fetch('http://localhost:3000/api/peminjaman')
+      .then((response) => response.json())
+      .then((data) => {
+        console.log('Data diterima: ', data); // Memeriksa data yang diterima
+        setPeminjamanList(data);
+        setFilteredPeminjaman(data); // Menyimpan data awal ke filteredPeminjaman
+      })
+      .catch((error) => console.error('Error fetching data:', error));
   }, []);
 
-  const handleDelete = async (index) => {
-    let updatedHistory = [...history];
-    updatedHistory.splice(index, 1);
-    await AsyncStorage.setItem('historyData', JSON.stringify(updatedHistory));
-    setHistory(updatedHistory);
-  };
+  // Fungsi untuk menangani pencarian
+  const handleSearch = () => {
+    console.log('Mencari dengan kata kunci: ', searchTerm); // Memeriksa kata kunci pencarian
+    if (!searchTerm.trim()) {
+      setFilteredPeminjaman(peminjamanList); // Jika pencarian kosong, tampilkan semua data
+      return;
+    }
 
-  const handleEdit = (index) => {
-    const dataToEdit = history[index];
-    navigation.navigate('Peminjaman', { dataToEdit, index });
-  };
+    // Filter data berdasarkan pencarian
+    const filtered = peminjamanList.filter((item) => {
+      return (
+        item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.alat.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    });
 
-  const handleReturn = async (index) => {
-    let updatedHistory = [...history];
-    const currentDate = new Date().toLocaleDateString(); // Mendapatkan tanggal saat ini
-    updatedHistory[index].status = 'Telah Dikembalikan';
-    updatedHistory[index].returnDate = currentDate; // Menyimpan tanggal pengembalian
-    await AsyncStorage.setItem('historyData', JSON.stringify(updatedHistory));
-    setHistory(updatedHistory);
+    console.log('Hasil pencarian: ', filtered); // Menampilkan hasil pencarian
+    setFilteredPeminjaman(filtered); // Update daftar yang ditampilkan dengan hasil pencarian
   };
 
   return (
     <View style={styles.container}>
-      {/* Header Teks di atas tabel */}
-      <View style={styles.header}>
-        <Text style={styles.title}>Data Peminjaman</Text>
-        <Text style={styles.subtitle}>Berikut adalah daftar peminjaman yang telah diajukan oleh peminjam.</Text>
+      {/* Kolom Pencarian */}
+      <View style={styles.searchContainer}>
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search by Name or Item"
+          value={searchTerm}
+          onChangeText={(text) => setSearchTerm(text)} // Mengupdate nilai pencarian
+        />
+        <Button title="Search" onPress={handleSearch} />
       </View>
 
-      {/* Tabel */}
-      {history.length > 0 ? (
-        <ScrollView style={styles.tableContainer}>
-          <View style={styles.tableHeader}>
-            <Text style={styles.tableHeaderText}>Nama Peminjam</Text>
-            <Text style={styles.tableHeaderText}>Nama Alat</Text>
-            <Text style={styles.tableHeaderText}>Tanggal Peminjaman</Text>
-            <Text style={styles.tableHeaderText}>Nama Petugas</Text>
-            <Text style={styles.tableHeaderText}>Foto</Text>
-            <Text style={styles.tableHeaderText}>Tanggal Pengembalian</Text>
-            <Text style={styles.tableHeaderText}>Status</Text>
-            <Text style={styles.tableHeaderText}>Aksi</Text>
+      <ScrollView contentContainerStyle={styles.scrollContainer}>
+        {filteredPeminjaman.map((item, index) => (
+          <View key={index} style={styles.card}>
+            <Text style={styles.title}>Nama Peminjam: {item.name}</Text>
+            <Text style={styles.text}>Nama Alat: {item.alat}</Text>
+            <Text style={styles.text}>Tanggal: {new Date(item.date).toLocaleDateString()}</Text>
+            <Text style={styles.text}>Petugas: {item.petugas}</Text>
+            {item.photo && (
+              <Image source={{ uri: `http://localhost:3000/${item.photo}` }} style={styles.image} />
+            )}
           </View>
-          
-          {/* Data Tabel */}
-          {history.map((item, index) => (
-            <View key={index} style={styles.tableRow}>
-              <Text style={styles.tableCell}>{item.name}</Text>
-              <Text style={styles.tableCell}>{item.alat}</Text>
-              <Text style={styles.tableCell}>{item.date}</Text>
-              <Text style={styles.tableCell}>{item.petugas}</Text>
-              
-              {/* Menampilkan foto jika ada */}
-              <View style={styles.tableCell}>
-                {item.photo ? (
-                  <Image source={{ uri: item.photo }} style={styles.image} />
-                ) : (
-                  <Text>--</Text>
-                )}
-              </View>
+        ))}
+      </ScrollView>
 
-              {/* Tanggal Pengembalian */}
-              <Text style={styles.tableCell}>
-                {item.status === 'Telah Dikembalikan' ? item.returnDate : '-'}
-              </Text>
-
-              {/* Status */}
-              <Text style={styles.tableCell}>{item.status || 'Belum Dikembalikan'}</Text>
-
-              {/* Tombol Aksi: Edit, Delete, dan Kembalikan dalam satu kolom */}
-              <View style={styles.tableCell}>
-                <View style={styles.actionButtons}>
-                  {/* Tombol Edit */}
-                  <TouchableOpacity
-                    style={styles.editButton}
-                    onPress={() => handleEdit(index)}
-                  >
-                    <Text style={styles.editButtonText}>Edit</Text>
-                  </TouchableOpacity>
-
-                  {/* Tombol Delete */}
-                  <TouchableOpacity
-                    style={styles.deleteButton}
-                    onPress={() => handleDelete(index)}
-                  >
-                    <Text style={styles.deleteButtonText}>Delete</Text>
-                  </TouchableOpacity>
-
-                  {/* Tombol Kembalikan */}
-                  {item.status !== 'Telah Dikembalikan' && (
-                    <TouchableOpacity
-                      style={styles.returnButton}
-                      onPress={() => handleReturn(index)}
-                    >
-                      <Text style={styles.returnButtonText}>Kembalikan</Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-              </View>
-            </View>
-          ))}
-        </ScrollView>
-      ) : (
-        <Text>Belum ada data peminjaman.</Text>
-      )}
-
-      <View style={styles.backButtonContainer}>
+      {/* Tombol Kembali */}
+      <View style={styles.footer}>
         <TouchableOpacity onPress={() => navigation.navigate('Home')}>
-          <Text style={styles.backButtonText}>Kembali ke Home</Text>
+          <Text style={{ color: '#778899', padding:5, fontSize:16, fontWeight: 'bold' }}>Back to Home</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -135,126 +78,47 @@ export default function Data() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
-    backgroundColor: '#0070B8',
+    backgroundColor: '#f5f5f5',
+    justifyContent: 'space-between', // Agar elemen-elemen di dalam container memiliki jarak yang baik
   },
-  header: {
-    marginBottom: 20,
-    textAlign: 'center',
-    backgroundColor: '#001F3F',
-    padding: 10,
-    borderRadius: 8,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 8,
-    color: '#fff',
-  },
-  subtitle: {
-    fontSize: 14,
-    color: '#fff',
-  },
-  tableContainer: {
-    width: '100%',
-    marginTop: 10,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    backgroundColor: '#fff',
-  },
-  tableHeader: {
+  searchContainer: {
     flexDirection: 'row',
-    backgroundColor: '#0070B8',
-    paddingVertical: 12,
-    justifyContent: 'center',
-    borderTopLeftRadius: 10,
-    borderTopRightRadius: 10,
-  },
-  tableHeaderText: {
-    flex: 1,
-    color: '#fff',
-    fontWeight: 'bold',
-    textAlign: 'center',
-    padding: 10,
-    borderRightWidth: 1,
-    borderRightColor: '#ddd',
-  },
-  tableRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 5,
+    padding: 10,
+    backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#ddd',
   },
-  tableCell: {
+  searchInput: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 10,
-    textAlign: 'center',
-    borderRightWidth: 1,
-    borderRightColor: '#ddd',
-  },
-  image: {
-    width: 50,
-    height: 50,
-    borderRadius: 8,
-  },
-  actionButtons: {
-    flexDirection: 'column', // Ubah jadi kolom
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 5,
-  },
-  editButton: {
-    backgroundColor: 'orange',
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderRadius: 5,
-    marginVertical: 5, // Menambahkan jarak vertikal antar tombol
-  },
-  deleteButton: {
-    backgroundColor: 'red',
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderRadius: 5,
-    marginVertical: 5, // Menambahkan jarak vertikal antar tombol
-  },
-  returnButton: {
-    backgroundColor: 'green',
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderRadius: 5,
-    marginVertical: 5, // Menambahkan jarak vertikal antar tombol
-  },
-  editButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-  },
-  deleteButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-  },
-  returnButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-  },
-  backButtonContainer: {
-    marginTop: 20,
-    alignItems: 'center',
-    backgroundColor: '#001F3F',
-    padding: 20,
-    width: '120%',
-    alignSelf: 'center',
-    top: 20,
-  },
-  backButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
     padding: 10,
-    fontSize: 16,
+    borderColor: '#ccc',
+    borderWidth: 1,
+    borderRadius: 5,
+    marginRight: 10,
+  },
+  scrollContainer: { 
+    padding: 20,
+    flexGrow: 1, // Memastikan scrollview bisa tumbuh mengisi ruang kosong
+  },
+  card: {
+    backgroundColor: '#fff',
+    padding: 15,
+    marginBottom: 20,
+    borderRadius: 10,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 10 },
+  },
+  title: { fontSize: 18, fontWeight: 'bold', marginBottom: 5 },
+  text: { fontSize: 16, marginBottom: 5 },
+  image: { width: 100, height: 100, borderRadius: 8, marginTop: 10 },
+  footer: {
+    padding: 10,
+    backgroundColor: '#fff',
+    borderTopWidth: 1,
+    borderTopColor: '#ddd',
+    alignItems: 'center',
   },
 });

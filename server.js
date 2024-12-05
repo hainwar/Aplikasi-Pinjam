@@ -13,7 +13,15 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Koneksi ke MongoDB
-connectDB();
+const mongoURI = process.env.MONGO_URI;
+
+// Menghubungkan ke MongoDB
+mongoose.connect(mongoURI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+})
+  .then(() => console.log('MongoDB Terhubung'))
+  .catch(err => console.log('Error koneksi MongoDB:', err));
 
 // Middleware untuk parsing JSON dan URL-encoded
 app.use(express.json());

@@ -5,8 +5,8 @@ import Login from './frontend/Login';
 import Register from './frontend/Register';
 import Home from './frontend/Home';
 import Peminjaman from './frontend/Peminjaman';
-import Pengembalian from './frontend/Pengembalian';
-import data from './frontend/history';
+import History from './frontend/History';
+import DetailHistory from './frontend/DetailHistory';
 
 
 const Stack = createNativeStackNavigator();
@@ -15,10 +15,10 @@ const Stack = createNativeStackNavigator();
 export default function App() {
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName="Home">
+      <Stack.Navigator initialRouteName="Login">
         <Stack.Screen 
-          name="Home" 
-          component={Home} 
+          name="Login" 
+          component={Login} 
           options={{
             headerShown: false,
           }} 
@@ -26,6 +26,14 @@ export default function App() {
         <Stack.Screen 
           name="Register" 
           component={Register} 
+          options={{ 
+            headerShown: false,
+            gestureEnabled: false 
+          }} 
+        />
+        <Stack.Screen 
+          name="Home" 
+          component={Home} 
           options={{ 
             headerShown: false,
             gestureEnabled: false 
@@ -40,16 +48,16 @@ export default function App() {
           }} 
         />
         <Stack.Screen 
-          name="Pengembalian" 
-          component={Pengembalian} 
+          name="History" 
+          component={History} 
           options={{ 
             headerShown: false,
             gestureEnabled: false 
           }} 
         />
         <Stack.Screen 
-          name="data" 
-          component={data} 
+          name="DetailHistory" 
+          component={DetailHistory} 
           options={{ 
             headerShown: false,
             gestureEnabled: false 
